@@ -1,0 +1,11 @@
+# Core dependencies
+torch
+pytorch-lightning
+torchmetrics
+numpy
+xarray
+netCDF4
+zarr
+matplotlib0
+jupyter
+ipykernel
