@@ -6,6 +6,7 @@ import argparse
 from pathlib import Path
 
 import pytorch_lightning as pl
+import yaml
 from pytorch_lightning.callbacks import (
     EarlyStopping,
     LearningRateMonitor,
@@ -17,17 +18,53 @@ from datamodule import LazyDataModule
 from model import CNNLightningModule, CNNModel
 
 
+def _load_config(config_path):
+    if not config_path:
+        return {}
+
+    path = Path(config_path)
+    if not path.exists():
+        raise FileNotFoundError(f"Config file not found: {path}")
+
+    with path.open("r", encoding="utf-8") as handle:
+        data = yaml.safe_load(handle) or {}
+
+    if not isinstance(data, dict):
+        raise ValueError("Config file must contain a YAML mapping of keys to values")
+
+    return data
+
+
 def parse_args():
     """Parse command line arguments.
     Ignore this for jupyter notebook usage
     """
+    config_parser = argparse.ArgumentParser(add_help=False)
+    config_parser.add_argument(
+        "--config",
+        type=str,
+        default=None,
+        help="Path to YAML config file",
+    )
+    config_args, remaining_args = config_parser.parse_known_args()
+    try:
+        config = _load_config(config_args.config)
+    except (FileNotFoundError, ValueError) as exc:
+        config_parser.error(str(exc))
+
     parser = argparse.ArgumentParser(description="Train climate model")
+    parser.add_argument(
+        "--config",
+        type=str,
+        default=config_args.config,
+        help="Path to YAML config file",
+    )
     
     # Data arguments
     parser.add_argument(
         "--data_dir",
         type=str,
-        required=True,
+        default=config.get("data_dir"),
         help="Path or pattern to data files",
     )
     
@@ -35,13 +72,13 @@ def parse_args():
     parser.add_argument(
         "--in_channels",
         type=int,
-        default=10,
+        default=config.get("in_channels", 10),
         help="Number of input channels",
     )
     parser.add_argument(
         "--out_channels",
         type=int,
-        default=1,
+        default=config.get("out_channels", 1),
         help="Number of output channels",
     )
     
@@ -49,25 +86,25 @@ def parse_args():
     parser.add_argument(
         "--batch_size",
         type=int,
-        default=32,
+        default=config.get("batch_size", 32),
         help="Batch size",
     )
     parser.add_argument(
         "--learning_rate",
         type=float,
-        default=1e-3,
+        default=config.get("learning_rate", 1e-3),
         help="Learning rate",
     )
     parser.add_argument(
         "--max_epochs",
         type=int,
-        default=100,
+        default=config.get("max_epochs", 100),
         help="Maximum number of epochs",
     )
     parser.add_argument(
         "--num_workers",
         type=int,
-        default=4,
+        default=config.get("num_workers", 4),
         help="Number of dataloader workers",
     )
     
@@ -75,17 +112,21 @@ def parse_args():
     parser.add_argument(
         "--seed",
         type=int,
-        default=42,
+        default=config.get("seed", 42),
         help="Random seed",
     )
     parser.add_argument(
         "--output_dir",
         type=str,
-        default="outputs",
+        default=config.get("output_dir", "outputs"),
         help="Output directory for logs and checkpoints",
     )
-    
-    return parser.parse_args()
+
+    args = parser.parse_args(remaining_args)
+    if args.data_dir is None:
+        parser.error("--data_dir is required (or set it in the config file)")
+
+    return args
 
 
 def main():

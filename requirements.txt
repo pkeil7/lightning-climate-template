@@ -9,3 +9,4 @@ zarr
 matplotlib0
 jupyter
 ipykernel
+pyyaml
