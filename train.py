@@ -39,94 +39,36 @@ def parse_args():
     """Parse command line arguments.
     Ignore this for jupyter notebook usage
     """
-    config_parser = argparse.ArgumentParser(add_help=False)
-    config_parser.add_argument(
-        "--config",
-        type=str,
-        default=None,
-        help="Path to YAML config file",
-    )
-    config_args, remaining_args = config_parser.parse_known_args()
-    try:
-        config = _load_config(config_args.config)
-    except (FileNotFoundError, ValueError) as exc:
-        config_parser.error(str(exc))
-
     parser = argparse.ArgumentParser(description="Train climate model")
     parser.add_argument(
-        "--config",
+        "config",
         type=str,
-        default=config_args.config,
         help="Path to YAML config file",
     )
-    
-    # Data arguments
-    parser.add_argument(
-        "--data_dir",
-        type=str,
-        default=config.get("data_dir"),
-        help="Path or pattern to data files",
-    )
-    
-    # Model arguments
-    parser.add_argument(
-        "--in_channels",
-        type=int,
-        default=config.get("in_channels", 10),
-        help="Number of input channels",
-    )
-    parser.add_argument(
-        "--out_channels",
-        type=int,
-        default=config.get("out_channels", 1),
-        help="Number of output channels",
-    )
-    
-    # Training arguments
-    parser.add_argument(
-        "--batch_size",
-        type=int,
-        default=config.get("batch_size", 32),
-        help="Batch size",
-    )
-    parser.add_argument(
-        "--learning_rate",
-        type=float,
-        default=config.get("learning_rate", 1e-3),
-        help="Learning rate",
-    )
-    parser.add_argument(
-        "--max_epochs",
-        type=int,
-        default=config.get("max_epochs", 100),
-        help="Maximum number of epochs",
-    )
-    parser.add_argument(
-        "--num_workers",
-        type=int,
-        default=config.get("num_workers", 4),
-        help="Number of dataloader workers",
-    )
-    
-    # Other arguments
-    parser.add_argument(
-        "--seed",
-        type=int,
-        default=config.get("seed", 42),
-        help="Random seed",
-    )
-    parser.add_argument(
-        "--output_dir",
-        type=str,
-        default=config.get("output_dir", "outputs"),
-        help="Output directory for logs and checkpoints",
-    )
 
-    args = parser.parse_args(remaining_args)
-    if args.data_dir is None:
-        parser.error("--data_dir is required (or set it in the config file)")
+    args = parser.parse_args()
+    try:
+        config = _load_config(args.config)
+    except (FileNotFoundError, ValueError) as exc:
+        parser.error(str(exc))
 
-    return args
+    defaults = {
+        "data_dir": None,
+        "in_channels": 10,
+        "out_channels": 1,
+        "batch_size": 32,
+        "learning_rate": 1e-3,
+        "max_epochs": 100,
+        "num_workers": 4,
+        "seed": 42,
+        "output_dir": "outputs",
+    }
+    merged = {**defaults, **config, "config": args.config}
+
+    if merged["data_dir"] is None:
+        parser.error("data_dir must be set in the config file")
+
+    return argparse.Namespace(**merged)
 
 
 def main():

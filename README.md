@@ -12,6 +12,7 @@ A PyTorch Lightning-based skeleton for deep learning with large climate datasets
 ├── train.py            # Training script (CLI)
 ├── notebooks/train_example.ipynb # Jupyter notebook with training example
 ├── requirements.txt    # Python dependencies
+├── config.yaml         # config file
 └── README.md           # This file
 ```
 
@@ -38,7 +39,7 @@ check out `train_example.ipynb`
 
 **Using the Command Line:**
 ```bash
-python train.py --data_dir /path/to/your/data --in_channels 10 --out_channels 1
+python train.py config.yaml
 ```
 
 
